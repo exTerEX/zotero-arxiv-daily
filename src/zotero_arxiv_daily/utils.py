@@ -145,6 +145,7 @@ def send_email(config:DictConfig, html:str):
     password = config.email.sender_password
     smtp_server = config.email.smtp_server
     smtp_port = config.email.smtp_port
+    smtp_user = config.email.get("smtp_user", sender)
     def _format_addr(s):
         name, addr = parseaddr(s)
         return formataddr((Header(name, 'utf-8').encode(), addr))
@@ -166,6 +167,6 @@ def send_email(config:DictConfig, html:str):
             logger.debug(f"Failed to use SSL. {e}\nTry to use plain text.")
             server = smtplib.SMTP(smtp_server, smtp_port)
 
-    server.login(sender, password)
+    server.login(smtp_user, password)
     server.sendmail(sender, [receiver], msg.as_string())
     server.quit()
