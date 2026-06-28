@@ -1,3 +1,4 @@
+import os
 from loguru import logger
 from pyzotero import zotero
 from omegaconf import DictConfig, ListConfig
@@ -118,7 +119,16 @@ class Executor:
         elif not self.config.executor.send_empty:
             logger.info("No new papers found. No email will be sent.")
             return
-        logger.info("Sending email...")
-        email_content = render_email(reranked_papers)
-        send_email(self.config, email_content)
-        logger.info("Email sent successfully")
+        # Check if email sending should be skipped
+        no_email = os.environ.get("NO_EMAIL", "").lower() in ("true", "1", "yes")
+        
+        if no_email:
+            logger.info("NO_EMAIL environment variable set. Skipping email sending.")
+            logger.info("Email content would be:")
+            email_content = render_email(reranked_papers)
+            logger.info(email_content[:500] + "..." if len(email_content) > 500 else email_content)
+        else:
+            logger.info("Sending email...")
+            email_content = render_email(reranked_papers)
+            send_email(self.config, email_content)
+            logger.info("Email sent successfully")
