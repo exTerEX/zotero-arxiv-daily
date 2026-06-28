@@ -124,9 +124,19 @@ class Executor:
         
         if no_email:
             logger.info("NO_EMAIL environment variable set. Skipping email sending.")
-            logger.info("Email content would be:")
             email_content = render_email(reranked_papers)
+            logger.info("Email content would be:")
             logger.info(email_content[:500] + "..." if len(email_content) > 500 else email_content)
+            
+            # Save email content to file if SAVE_EMAIL_PATH is set
+            save_path = os.environ.get("SAVE_EMAIL_PATH")
+            if save_path:
+                try:
+                    with open(save_path, 'w', encoding='utf-8') as f:
+                        f.write(email_content)
+                    logger.info(f"Email content saved to: {save_path}")
+                except Exception as e:
+                    logger.error(f"Failed to save email content: {e}")
         else:
             logger.info("Sending email...")
             email_content = render_email(reranked_papers)

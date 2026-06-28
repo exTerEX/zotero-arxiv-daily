@@ -25,9 +25,18 @@ jobs:
           OPENAI_API_BASE: ${{ secrets.OPENAI_API_BASE }}
           CUSTOM_CONFIG: ${{ vars.CUSTOM_CONFIG }}
           NO_EMAIL: "true"
+          SAVE_EMAIL_PATH: "email_output.html"
         run: |
           export DEBUG=true
           printf "%b\n" "$CUSTOM_CONFIG" > config/custom.yaml
           echo "Use custom config: "
           cat config/custom.yaml
           uv run src/zotero_arxiv_daily/main.py
+
+      - name: Upload email output as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-output
+          path: email_output.html
+          retention-days: 7
