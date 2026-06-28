@@ -29,88 +29,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_API_BASE: ${{ secrets.OPENAI_API_BASE }}
           DEBUG: true
-          CUSTOM_CONFIG: |
-            zotero:
-              user_id: ${oc.env:ZOTERO_ID}
-              api_key: ${oc.env:ZOTERO_KEY}
-              include_path: null
-            
-            email:
-              sender: ${oc.env:SENDER}
-              receiver: ${oc.env:RECEIVER}
-              smtp_server: ${oc.env:SMTP_SERVER}
-              smtp_port: ${oc.env:SMTP_PORT}
-              sender_password: ${oc.env:SENDER_PASSWORD}
-            
-            llm:
-              api:
-                key: ${oc.env:OPENAI_API_KEY}
-                base_url: ${oc.env:OPENAI_API_BASE}
-              generation_kwargs:
-                model: gpt-4o-mini
-            
-            source:
-              arxiv:
-                category: ["cs.AI","cs.CV","cs.LG","cs.CL"]
-            
-            executor:
-              debug: true
-              source: ['arxiv']
-              send_empty: true
-              max_paper_num: 10
-              reranker: local
+          CUSTOM_CONFIG: ${{ vars.CUSTOM_CONFIG }}
         run: |
-          # Create config directory
-          mkdir -p config
-          
-          # Write custom config
+          export DEBUG=true
           printf "%b\n" "$CUSTOM_CONFIG" > config/custom.yaml
-          
-          echo "Configuration:"
+          echo "Use custom config: "
           cat config/custom.yaml
-          echo ""
-          
-          # Create a wrapper script that patches send_email
-          cat > /tmp/test_wrapper.py << 'EOF'
-          import sys
-          import os
-          import datetime
-          from omegaconf import DictConfig
-          
-          # Patch send_email before any imports
-          def preview_send_email(config: DictConfig, html: str):
-              print("\n" + "="*80)
-              print("📧 EMAIL PREVIEW - NOT SENT")
-              print("="*80)
-              print(f"TO: {config.email.receiver}")
-              print(f"FROM: {config.email.sender}")
-              today = datetime.datetime.now().strftime('%Y/%m/%d')
-              print(f"SUBJECT: Daily arXiv {today}")
-              print("="*80)
-              print("HTML CONTENT:")
-              print("-" * 80)
-              max_show = 8000
-              if len(html) > max_show:
-                  print(html[:max_show] + f"\n\n... [truncated, total {len(html)} chars]")
-              else:
-                  print(html)
-              print("-" * 80)
-              print("✅ Email would have been sent successfully (test mode)")
-              print("="*80 + "\n")
-          
-          # Patch the modules
-          import zotero_arxiv_daily.utils as utils
-          import zotero_arxiv_daily.executor as executor
-          utils.send_email = preview_send_email
-          executor.send_email = preview_send_email
-          
-          # Now run main
-          from zotero_arxiv_daily.main import main
-          main()
-          EOF
-          
-          echo "Running zotero-arxiv-daily in test mode..."
-          cd /workspace/exTerEX__zotero-arxiv-daily && python /tmp/test_wrapper.py
-          
-          echo ""
-          echo "✅ Test completed! Check the output above for the email preview."
+          uv run src/zotero_arxiv_daily/main.py
